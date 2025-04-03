@@ -1,86 +1,89 @@
 import express from "express";
 import bodyParser from "body-parser";
-import axios from "axios";
 
 const app = express();
-const port = process.env.PORT ||  3000;
-const API_URL = "http://localhost:4000";
+const port = process.env.PORT || 3000;
 
+// In-memory database for posts
+let posts = [
+  
+];
+let lastId = 3;
+
+// Middleware
 app.use(express.static("public"));
-
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
+app.set("view engine", "ejs");
 
-// Route to render the main page
-app.get( "/", async (req, res) => {
-  try {
-    const response = await axios.get(`${API_URL}/posts`);
-    // console.log(response);
-    res.render("index.ejs", { posts: response.data });
-  } catch (error) {
-    res.status(500).json({ message: "Error fetching posts" });
-  }
+// --------------------- FRONTEND ROUTES ---------------------
+
+// Render main page with all posts
+app.get("/", (req, res) => {
+  res.render("index.ejs", { posts });
 });
 
-// Route to render the edit page
+// Render new post page
 app.get("/new", (req, res) => {
   res.render("modify.ejs", { heading: "New Post", submit: "Create Post" });
-  // console.log(req);
 });
 
-app.get("/edit/:id", async (req, res) => {
-  try {
-    console.log("working");
-    const response = await axios.get(`${API_URL}/posts/${req.params.id}`);
-    // console.log(response.data);
-    res.render("modify.ejs", {
-      heading: "Edit Post",
-      submit: "Update Post",
-      post: response.data,
-    });
-  } catch (error) {
-    res.status(500).json({ message: "Error fetching post" });
-  }
+// Render edit post page
+app.get("/edit/:id", (req, res) => {
+  const post = posts.find((p) => p.id == req.params.id);
+  if (!post) return res.status(404).json({ message: "Post not found" });
+
+  res.render("modify.ejs", { heading: "Edit Post", submit: "Update Post", post });
+});
+
+// --------------------- API ROUTES ---------------------
+
+// Get all posts
+app.get("/api/posts", (req, res) => {
+  res.json(posts);
+});
+
+// Get a specific post by ID
+app.get("/api/posts/:id", (req, res) => {
+  const post = posts.find((p) => p.id == req.params.id);
+  if (!post) return res.status(404).json({ message: "Post not found" });
+
+  res.json(post);
 });
 
 // Create a new post
-app.post("/api/posts", async (req, res) => {
-  try {
-    // console.log("working")
-    const response = await axios.post(`${API_URL}/posts`, req.body);
-    console.log(response.data);
-    res.redirect("/");
-  } catch (error) {
-    res.status(500).json({ message: "Error creating post" });
-  }
+app.post("/api/posts", (req, res) => {
+  const newPost = {
+    id: ++lastId,
+    title: req.body.title,
+    content: req.body.content,
+    author: req.body.author,
+    date: new Date().toISOString(),
+  };
+
+  posts.push(newPost);
+  res.redirect("/");
 });
 
-// Partially update a post
-app.post("/api/posts/:id", async (req, res) => {
-  // console.log("called");
-  try {
-    const response = await axios.patch(
-      `${API_URL}/posts/${req.params.id}`,
-      req.body
-    );
-    // console.log(response.data);
-    res.redirect("/");
-  } catch (error) {
-    res.status(500).json({ message: "Error updating post" });
-  }
+// Update a post (partial update)
+app.post("/api/posts/:id", (req, res) => {
+  const post = posts.find((p) => p.id == req.params.id);
+  if (!post) return res.status(404).json({ message: "Post not found" });
+
+  post.title = req.body.title || post.title;
+  post.content = req.body.content || post.content;
+  post.author = req.body.author || post.author;
+
+  res.redirect("/");
 });
 
 // Delete a post
-app.get("/api/posts/delete/:id", async (req, res) => {
-  try {
-    await axios.delete(`${API_URL}/posts/${req.params.id}`);
-    console.log("working deleted post")
-    res.redirect("/");
-  } catch (error) {
-    res.status(500).json({ message: "Error deleting post" });
-  }
+app.get("/api/posts/delete/:id", (req, res) => {
+  posts = posts.filter((p) => p.id != req.params.id);
+  res.redirect("/");
 });
 
+// Start Server
 app.listen(port, () => {
-  console.log(`Backend server is running on http://localhost:${port}`);
+  console.log(`Server running on http://localhost:${port}`);
 });
