@@ -42,16 +42,17 @@ pool.query("SELECT * FROM posts" ,(err,res)=>{
 
 // Render main page with all posts
 app.get("/", (req, res) => {
-  pool.query("SELECT * FROM posts" ,(err,res)=>{
+  pool.query("SELECT * FROM posts" ,(err,dBres)=>{
     if(err){
       console.log("Error message" ,err.stack);
     }
     else{
-      posts = res.rows;
+      posts = dBres.rows;
+      res.render("index.ejs", { posts });
       //console.log(posts);
     }
   })
-  res.render("index.ejs", { posts });
+  
 });
 
 // Render new post page
@@ -85,7 +86,7 @@ app.get("/api/posts/:id", (req, res) => {
 // Create a new post
 app.post("/api/posts", (req, res) => {
   pool.query("INSERT INTO posts (title,content,author,date) VALUES ($1,$2,$3,$4)",[req.body.title,req.body.content,req.body.author,new Date().toISOString()])
-  posts.push(newPost);
+  // posts.push(newPost);
   res.redirect("/");
 });
 
