@@ -1,6 +1,7 @@
 import express from "express";
 import bodyParser from "body-parser";
-
+import pg from "pg"
+const {Pool} = pg;
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -14,12 +15,42 @@ let lastId = 3;
 app.use(express.static("public"));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-app.set("view engine", "ejs");
+// app.set("view engine", "ejs");
+
+//CONNECTING DB
+const pool = new Pool({
+  user: "postgres",
+  host: "localhost",
+  database: "blog",
+  password: "Nahipata@1",
+  port: 5432,
+})
+
+
+pool.query("SELECT * FROM posts" ,(err,res)=>{
+  if(err){
+    console.log("Error message" ,err.stack);
+  }
+  else{
+    posts = res.rows;
+    console.log(posts);
+  }
+})
+
 
 // --------------------- FRONTEND ROUTES ---------------------
 
 // Render main page with all posts
 app.get("/", (req, res) => {
+  pool.query("SELECT * FROM posts" ,(err,res)=>{
+    if(err){
+      console.log("Error message" ,err.stack);
+    }
+    else{
+      posts = res.rows;
+      //console.log(posts);
+    }
+  })
   res.render("index.ejs", { posts });
 });
 
@@ -53,14 +84,7 @@ app.get("/api/posts/:id", (req, res) => {
 
 // Create a new post
 app.post("/api/posts", (req, res) => {
-  const newPost = {
-    id: ++lastId,
-    title: req.body.title,
-    content: req.body.content,
-    author: req.body.author,
-    date: new Date().toISOString(),
-  };
-
+  pool.query("INSERT INTO posts (title,content,author,date) VALUES ($1,$2,$3,$4)",[req.body.title,req.body.content,req.body.author,new Date().toISOString()])
   posts.push(newPost);
   res.redirect("/");
 });
