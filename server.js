@@ -9,13 +9,11 @@ const port = process.env.PORT || 3000;
 let posts = [
   
 ];
-let lastId = 3;
 
 // Middleware
 app.use(express.static("public"));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-// app.set("view engine", "ejs");
 
 //CONNECTING DB
 const pool = new Pool({
@@ -95,16 +93,23 @@ app.post("/api/posts/:id", (req, res) => {
   const post = posts.find((p) => p.id == req.params.id);
   if (!post) return res.status(404).json({ message: "Post not found" });
 
-  post.title = req.body.title || post.title;
-  post.content = req.body.content || post.content;
-  post.author = req.body.author || post.author;
-
-  res.redirect("/");
+  let ptitle = req.body.title || post.title;
+  let pcontent = req.body.content || post.content;
+  let pauthor = req.body.author || post.author;
+  pool.query("UPDATE posts SET title = $2 , content = $3 , author = $4 , date = $5 WHERE ID = $1",[req.params.id,ptitle,pcontent,pauthor,new Date().toISOString()],(err,dBres)=>{
+    if(err){
+      console.log("Error message",err.stack);
+    }
+    else{
+      res.redirect("/");
+    }
+  })
+  
 });
 
 // Delete a post
 app.get("/api/posts/delete/:id", (req, res) => {
-  posts = posts.filter((p) => p.id != req.params.id);
+  pool.query("DELETE FROM posts WHERE id = $1",[req.params.id]);
   res.redirect("/");
 });
 
