@@ -12,7 +12,7 @@ Uses server-side rendering with EJS templates
 Tech Stack
 - Frontend: HTML, CSS, EJS
 - Backend: Node.js, Express.js
-- Database: PostgreSQL (planned integration)
+- Database: PostgreSQL
 - Templating: EJS
 - Hosting: Render
 
